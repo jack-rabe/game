@@ -12,19 +12,44 @@ import (
 	"github.com/rs/cors"
 )
 
-var upgrader = websocket.Upgrader{CheckOrigin: allowCorsSocket}
-var users []string
-var connections map[uuid.UUID]*websocket.Conn
+const PORT = 3333
 
 type User struct {
 	Name string
+	Id   string
 }
+
+// Name -> socketId
+var users map[string]string
+var connections map[uuid.UUID]*websocket.Conn
+var upgrader = websocket.Upgrader{CheckOrigin: allowCorsSocket}
 
 func allowCorsSocket(r *http.Request) bool {
 	return true
 }
 
+func cleanupUserOnClose(id uuid.UUID) {
+	var nameToRemove string
+	for name, socketId := range users {
+		if socketId == id.URN() {
+			nameToRemove = name
+			break
+		}
+	}
+	if nameToRemove != "" {
+		delete(users, nameToRemove)
+		for _, conn := range connections {
+			conn.WriteJSON(struct {
+				Name string `json:"name"`
+				Type string `json:"type"`
+			}{Name: nameToRemove, Type: "leave"})
+		}
+	}
+}
+
 func handleSocket(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("handling socket connection")
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
@@ -35,21 +60,23 @@ func handleSocket(w http.ResponseWriter, r *http.Request) {
 	id := uuid.New()
 	connections[id] = conn
 	defer delete(connections, id)
+	defer cleanupUserOnClose(id)
 
 	for {
-		messageType, message, err := conn.ReadMessage()
+		_, _, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("socket closing: ", err)
 			return
 		}
-
-		fmt.Println("message type", messageType)
-		fmt.Println(string(message))
+		conn.WriteJSON(struct {
+			Id   string `json:"id"`
+			Type string `json:"type"`
+		}{Id: id.URN(), Type: "id"})
 	}
 }
 
 func addUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("add user request\n")
+	fmt.Println("add user request")
 
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -58,35 +85,46 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users = append(users, user.Name)
+	users[user.Name] = user.Id
 	for _, conn := range connections {
-		conn.WriteJSON(user)
+		conn.WriteJSON(struct {
+			Name string `json:"name"`
+			Type string `json:"type"`
+		}{Name: user.Name, Type: "join"})
 	}
 }
 
 func getUsers(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("get user request\n")
+	fmt.Println("get user request")
 
+	var userKeys = make([]string, 0)
+	for u := range users {
+		userKeys = append(userKeys, u)
+	}
 	encoder := json.NewEncoder(w)
-	encoder.Encode(users)
+	encoder.Encode(userKeys)
 }
 
-func main() {
-	connections = make(map[uuid.UUID]*websocket.Conn)
-
-	mux := http.NewServeMux()
-
-	corsOptions := cors.New(cors.Options{
+func getCorsOptions() *cors.Cors {
+	return cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"*"},
 	})
-	handler := corsOptions.Handler(mux)
+}
+
+func main() {
+	connections = make(map[uuid.UUID]*websocket.Conn)
+	users = make(map[string]string)
+
+	mux := http.NewServeMux()
+	handler := getCorsOptions().Handler(mux)
 
 	mux.HandleFunc("/ws", handleSocket)
 	mux.HandleFunc("/addUser", addUser)
 	mux.HandleFunc("/getUsers", getUsers)
 
+	fmt.Printf("listening on port %v\n", PORT)
 	if err := http.ListenAndServe(":3333", handler); err != nil {
 		log.Fatal(err)
 	}

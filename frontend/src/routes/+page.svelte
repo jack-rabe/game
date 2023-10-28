@@ -4,6 +4,8 @@
 	const url = '://localhost:3333';
 	let players: string[] = [];
 	let user: string;
+	let socketId: string;
+	let submitted = false;
 	let nameInput: HTMLInputElement;
 
 	onMount(() => {
@@ -11,7 +13,6 @@
 			.then((res) => res.json())
 			.then((res) => (players = res));
 
-		let message = '';
 		let socket: WebSocket;
 		const connectWebSocket = () => {
 			socket = new WebSocket(`ws${url}/ws`);
@@ -21,9 +22,16 @@
 				socket.send('hi');
 			};
 			socket.onmessage = (event) => {
-				const newUser = JSON.parse(event.data);
-				players.push(newUser.Name);
-				players = players;
+				const data = JSON.parse(event.data);
+				if (data.type === 'id') {
+					socketId = data.id;
+				} else if (data.type === 'join') {
+					players.push(data.name);
+					players = players;
+				} else if (data.type === 'leave') {
+					players = players.filter((p) => p !== data.name);
+				}
+				console.log(data);
 			};
 			socket.onclose = (event) => {
 				console.log('WebSocket connection closed', event);
@@ -51,17 +59,19 @@
 			type="text"
 			name="name"
 			bind:value={user}
+			disabled={submitted}
 			bind:this={nameInput}
 			class="input border-primary"
 		/>
 	</div>
 	<button
 		class="btn"
+		disabled={submitted}
 		on:click={() => {
 			if (!user) {
 				return;
 			}
-			const body = JSON.stringify({ Name: user });
+			const body = JSON.stringify({ Name: user, Id: socketId });
 			fetch(`http${url}/addUser`, {
 				method: 'POST',
 				body,
@@ -70,8 +80,12 @@
 				}
 			});
 			nameInput.value = '';
+			submitted = true;
 		}}>Play</button
 	>
+	{#if submitted}
+		<div>User: {user}</div>
+	{/if}
 </div>
 
 <style global>
