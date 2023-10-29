@@ -4,43 +4,42 @@
 	const url = '://localhost:3333';
 	let players: string[] = [];
 	let user: string;
-	let socketId: string;
 	let submitted = false;
 	let nameInput: HTMLInputElement;
+	let socket: WebSocket;
+	let socketId: string;
+
+	const connectWebSocket = () => {
+		socket = new WebSocket(`ws${url}/ws`);
+
+		socket.onopen = (event) => {
+			console.log('WebSocket connection opened', event);
+			socket.send('hi');
+		};
+		socket.onmessage = (event) => {
+			const data = JSON.parse(event.data);
+			if (data.type === 'id') {
+				socketId = data.id;
+			} else if (data.type === 'join') {
+				players.push(data.name);
+				players = players;
+				if (data.gameReady) {
+					window.location.href = '/game';
+				}
+			} else if (data.type === 'leave') {
+				players = players.filter((p) => p !== data.name);
+			}
+			console.log(data);
+		};
+		socket.onclose = (event) => {
+			console.log('WebSocket connection closed', event);
+		};
+	};
 
 	onMount(() => {
 		fetch(`http${url}/getUsers`)
 			.then((res) => res.json())
 			.then((res) => (players = res));
-
-		let socket: WebSocket;
-		const connectWebSocket = () => {
-			socket = new WebSocket(`ws${url}/ws`);
-
-			socket.onopen = (event) => {
-				console.log('WebSocket connection opened', event);
-				socket.send('hi');
-			};
-			socket.onmessage = (event) => {
-				const data = JSON.parse(event.data);
-				if (data.type === 'id') {
-					socketId = data.id;
-				} else if (data.type === 'join') {
-					players.push(data.name);
-					players = players;
-					if (data.gameReady) {
-						window.location.href = '/game';
-					}
-				} else if (data.type === 'leave') {
-					players = players.filter((p) => p !== data.name);
-				}
-				console.log(data);
-			};
-			socket.onclose = (event) => {
-				console.log('WebSocket connection closed', event);
-			};
-		};
-
 		connectWebSocket();
 	});
 </script>
@@ -94,7 +93,3 @@
 		>
 	{/if}
 </div>
-
-<style global>
-	@import '../global.css';
-</style>
