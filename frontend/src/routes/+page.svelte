@@ -28,6 +28,9 @@
 				} else if (data.type === 'join') {
 					players.push(data.name);
 					players = players;
+					if (data.gameReady) {
+						window.location.href = '/game';
+					}
 				} else if (data.type === 'leave') {
 					players = players.filter((p) => p !== data.name);
 				}

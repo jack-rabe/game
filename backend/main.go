@@ -87,10 +87,12 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 
 	users[user.Name] = user.Id
 	for _, conn := range connections {
+		fourUsersReady := len(users) == 4
 		conn.WriteJSON(struct {
-			Name string `json:"name"`
-			Type string `json:"type"`
-		}{Name: user.Name, Type: "join"})
+			Name      string `json:"name"`
+			Type      string `json:"type"`
+			GameReady bool   `json:"gameReady"`
+		}{Name: user.Name, Type: "join", GameReady: fourUsersReady})
 	}
 }
 
