@@ -42,49 +42,53 @@
 	});
 </script>
 
-<h1 class="bg-primary font-bold text-2xl flex items-center justify-center h-14">Lobby</h1>
+<h1 class="bg-accent font-bold text-black text-2xl flex items-center justify-center h-14">Lobby</h1>
 <div class="h-2/5 flex justify-center items-center">
 	<div
-		class="w-1/2 text-ellipsis overflow-hidden hover:overflow-visible h-40 bg-secondary flex rounded-lg"
+		class="w-1/2 text-ellipsis overflow-hidden hover:overflow-visible h-32 bg-secondary grid grid-cols-4 items-center rounded-lg"
 	>
 		{#each players as player}
-			<span class="m-2 font-bold hover:animate-bounce">{player}</span>
+			<div
+				class={`bg-neutral rounded-lg h-5/6 m-1 font-bold flex justify-center items-center ${
+					player === user ? 'animate-pulse' : ''
+				}`}
+			>
+				{player}
+			</div>
 		{/each}
 	</div>
 </div>
 <div class="flex flex-col items-center m-2 h-2/5">
-	<div class="m-4">
-		<label for="name" class="label">Name</label>
-		<input
-			type="text"
-			name="name"
-			bind:value={user}
-			disabled={submitted}
-			bind:this={nameInput}
-			class="input border-primary"
-		/>
-	</div>
-	<button
-		class="btn"
-		disabled={submitted}
-		on:click={() => {
-			if (!user) {
-				return;
-			}
-			const body = JSON.stringify({ Name: user, Id: socketId });
-			fetch(`http${url}/addUser`, {
-				method: 'POST',
-				body,
-				headers: {
-					'Content-Type': 'application/json'
+	{#if !submitted}
+		<div class="m-4">
+			<label for="name" class="label font-bold">Name</label>
+			<input
+				type="text"
+				name="name"
+				bind:value={user}
+				disabled={submitted}
+				bind:this={nameInput}
+				class="input border-primary"
+			/>
+		</div>
+		<button
+			class="btn"
+			on:click={() => {
+				if (!user) {
+					return;
 				}
-			});
-			nameInput.value = '';
-			submitted = true;
-		}}>Play</button
-	>
-	{#if submitted}
-		<div>User: {user}</div>
+				const body = JSON.stringify({ Name: user, Id: socketId });
+				fetch(`http${url}/addUser`, {
+					method: 'POST',
+					body,
+					headers: {
+						'Content-Type': 'application/json'
+					}
+				});
+				nameInput.value = '';
+				submitted = true;
+			}}>Play</button
+		>
 	{/if}
 </div>
 
