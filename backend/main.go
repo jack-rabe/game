@@ -23,6 +23,11 @@ type UserConnection struct {
 	conn *websocket.Conn
 }
 
+type Message struct {
+	Sender  string `json:"sender"`
+	Content string `json:"content"`
+}
+
 const PORT = 3333
 
 var lobbyConnections map[uuid.UUID]UserConnection
@@ -59,16 +64,16 @@ func handleSocket(w http.ResponseWriter, r *http.Request) {
 	defer delete(lobbyConnections, id)
 	defer cleanupUserOnClose(id)
 
+	conn.WriteJSON(struct {
+		Id   string `json:"id"`
+		Type string `json:"type"`
+	}{Id: id.URN(), Type: "id"})
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("socket closing: ", err)
 			return
 		}
-		conn.WriteJSON(struct {
-			Id   string `json:"id"`
-			Type string `json:"type"`
-		}{Id: id.URN(), Type: "id"})
 	}
 }
 
@@ -198,10 +203,26 @@ func joinGame(w http.ResponseWriter, r *http.Request) {
 	}{Players: players, Type: "load"})
 
 	for {
-		_, _, err := conn.ReadMessage()
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("socket closing: ", err)
 			return
+		}
+
+		var message Message
+		err = json.Unmarshal(msg, &message)
+		if err != nil {
+			// TODO give appropriate errors for failed requests
+			fmt.Println(err)
+			return
+		}
+		for _, c := range game.Connections {
+			if c != nil {
+				c.WriteJSON(struct {
+					Type    string  `json:"type"`
+					Message Message `json:"message"`
+				}{Type: "message", Message: message})
+			}
 		}
 	}
 }
