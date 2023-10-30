@@ -40,7 +40,7 @@
 				players.push(data.name);
 				players = players;
 				if (data.gameReady) {
-					window.location.href = `/game/${data.gameId}`;
+					window.location.href = `/game/${data.gameId}?name=${user}`;
 				}
 			} else if (data.type === 'leave') {
 				players = players.filter((p) => p !== data.name);
@@ -54,14 +54,16 @@
 	};
 
 	onMount(() => {
-		fetch(`http${url}/getUsers`)
+		fetch(`http${url}/getLobbyUsers`)
 			.then((res) => res.json())
 			.then((res) => (players = res));
 		connectWebSocket();
 	});
 </script>
 
-<h1 class="flex h-14 items-center justify-center bg-accent text-2xl font-bold text-black">Lobby</h1>
+<h1 class="flex h-14 items-center justify-center bg-secondary text-2xl font-bold text-black">
+	Lobby
+</h1>
 <div class="flex h-2/5 items-center justify-center">
 	<div
 		class="grid h-32 w-1/2 grid-cols-4 items-center overflow-hidden text-ellipsis rounded-lg bg-secondary hover:overflow-visible"
