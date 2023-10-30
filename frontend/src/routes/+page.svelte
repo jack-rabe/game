@@ -9,6 +9,22 @@
 	let socket: WebSocket;
 	let socketId: string;
 
+	const joinLobby = () => {
+		if (!user) {
+			return;
+		}
+		const body = JSON.stringify({ Name: user, Id: socketId });
+		fetch(`http${url}/addUser`, {
+			method: 'POST',
+			body,
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+		nameInput.value = '';
+		submitted = true;
+	};
+
 	const connectWebSocket = () => {
 		socket = new WebSocket(`ws${url}/ws`);
 
@@ -24,7 +40,7 @@
 				players.push(data.name);
 				players = players;
 				if (data.gameReady) {
-					window.location.href = '/game';
+					window.location.href = `/game/${data.gameId}`;
 				}
 			} else if (data.type === 'leave') {
 				players = players.filter((p) => p !== data.name);
@@ -52,7 +68,7 @@
 		{#each players as player}
 			<div
 				class={`bg-neutral rounded-lg h-5/6 m-1 font-bold flex justify-center items-center ${
-					player === user ? 'animate-pulse' : ''
+					player === user && submitted ? 'animate-pulse' : ''
 				}`}
 			>
 				{player}
@@ -73,23 +89,6 @@
 				class="input border-primary"
 			/>
 		</div>
-		<button
-			class="btn"
-			on:click={() => {
-				if (!user) {
-					return;
-				}
-				const body = JSON.stringify({ Name: user, Id: socketId });
-				fetch(`http${url}/addUser`, {
-					method: 'POST',
-					body,
-					headers: {
-						'Content-Type': 'application/json'
-					}
-				});
-				nameInput.value = '';
-				submitted = true;
-			}}>Play</button
-		>
+		<button class="btn" on:click={joinLobby}>Play</button>
 	{/if}
 </div>
