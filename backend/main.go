@@ -175,17 +175,27 @@ func joinGame(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	gameFound := false
-	for _, game := range games {
-		if gameId == game.Id {
-			game.Connections[name] = conn
-			gameFound = true
+	var game *Game
+	for _, g := range games {
+		if gameId == g.Id {
+			g.Connections[name] = conn
+			game = &g
 		}
 	}
-	if !gameFound {
+	if game == nil {
 		fmt.Println(err)
 		return
 	}
+
+	// send the list of players in the game
+	players := make([]string, 0, len(game.Connections))
+	for player := range game.Connections {
+		players = append(players, player)
+	}
+	conn.WriteJSON(struct {
+		Type    string   `json:"type"`
+		Players []string `json:"players"`
+	}{Players: players, Type: "load"})
 
 	for {
 		_, _, err := conn.ReadMessage()
