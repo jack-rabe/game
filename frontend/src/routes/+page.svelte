@@ -61,14 +61,14 @@
 	});
 </script>
 
-<h1 class="bg-accent font-bold text-black text-2xl flex items-center justify-center h-14">Lobby</h1>
-<div class="h-2/5 flex justify-center items-center">
+<h1 class="flex h-14 items-center justify-center bg-accent text-2xl font-bold text-black">Lobby</h1>
+<div class="flex h-2/5 items-center justify-center">
 	<div
-		class="w-1/2 text-ellipsis overflow-hidden hover:overflow-visible h-32 bg-secondary grid grid-cols-4 items-center rounded-lg"
+		class="grid h-32 w-1/2 grid-cols-4 items-center overflow-hidden text-ellipsis rounded-lg bg-secondary hover:overflow-visible"
 	>
 		{#each players as player}
 			<div
-				class={`bg-neutral rounded-lg text-xl h-5/6 m-3 font-bold flex justify-center items-center ${
+				class={`m-3 flex h-5/6 items-center justify-center rounded-lg bg-neutral text-xl font-bold ${
 					player === user && submitted ? 'animate-pulse' : ''
 				}`}
 			>
@@ -77,7 +77,7 @@
 		{/each}
 	</div>
 </div>
-<div class="flex flex-col items-center m-2 h-2/5">
+<div class="m-2 flex h-2/5 flex-col items-center">
 	{#if !submitted}
 		<div class="m-4">
 			<label for="name" class="label font-bold">Name</label>
