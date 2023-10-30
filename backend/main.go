@@ -12,8 +12,6 @@ import (
 	"github.com/rs/cors"
 )
 
-const PORT = 3333
-
 type User struct {
 	Name string
 	Id   string
@@ -23,6 +21,8 @@ type UserConnection struct {
 	user *User
 	conn *websocket.Conn
 }
+
+const PORT = 3333
 
 var connections map[uuid.UUID]UserConnection
 var upgrader = websocket.Upgrader{CheckOrigin: allowCorsSocket}
@@ -76,12 +76,18 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil && err != io.EOF {
+		// TODO give appropriate errors for failed requests
 		fmt.Println(err)
 		return
 	}
 
 	playersJoined := 0
 	for _, userConn := range connections {
+		// TODO give appropriate errors for failed requests
+		if user.Name == userConn.user.Name {
+			fmt.Println("duplicate name")
+			return
+		}
 		if userConn.user.Id == user.Id {
 			userConn.user.Name = user.Name
 		}
@@ -105,14 +111,17 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUsers(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("GET /getusers")
+	fmt.Println("GET /getUsers")
 
-	var userKeys = make([]string, 0)
+	var userNames = make([]string, 0)
 	for _, userConn := range connections {
-		userKeys = append(userKeys, userConn.user.Name)
+		if userConn.user.Name != "" {
+			userNames = append(userNames, userConn.user.Name)
+
+		}
 	}
 	encoder := json.NewEncoder(w)
-	encoder.Encode(userKeys)
+	encoder.Encode(userNames)
 }
 
 func getCorsOptions() *cors.Cors {

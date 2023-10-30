@@ -48,6 +48,7 @@
 			console.log(data);
 		};
 		socket.onclose = (event) => {
+			alert('Lost connection to server!');
 			console.log('WebSocket connection closed', event);
 		};
 	};
@@ -67,7 +68,7 @@
 	>
 		{#each players as player}
 			<div
-				class={`bg-neutral rounded-lg h-5/6 m-1 font-bold flex justify-center items-center ${
+				class={`bg-neutral rounded-lg text-xl h-5/6 m-3 font-bold flex justify-center items-center ${
 					player === user && submitted ? 'animate-pulse' : ''
 				}`}
 			>

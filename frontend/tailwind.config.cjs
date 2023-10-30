@@ -2,7 +2,7 @@
 export default {
 	content: ['./src/**/*.svelte', './src/app.html'],
 	theme: {
-		extend: {}
+		extend: { fontFamily: { dosis: ['Dosis', 'sans-serif'] } }
 	},
 	plugins: [require('daisyui')],
 	daisyui: {
