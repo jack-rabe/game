@@ -13,8 +13,19 @@
 	let user: string;
 	let messages: Message[] = [];
 	let messagesElement: HTMLElement;
+	let messageInputElement: HTMLInputElement;
 
 	export let data: PageData;
+
+	const sendMessage = (e: MouseEvent) => {
+		if (!messageInputElement.value) {
+			return;
+		}
+
+		let msg: Message = { sender: user, content: messageInputElement.value };
+		socket.send(JSON.stringify(msg));
+		messageInputElement.value = '';
+	};
 
 	onMount(() => {
 		const name = new URLSearchParams(window.location.search).get('name');
@@ -75,9 +86,8 @@
 			{/each}
 		</div>
 		<div class="flex h-1/6 items-center justify-center rounded-lg">
-			<!-- TODO scroll to bottom -->
-			<input type="text" class="input mr-1" />
-			<button class="btn">Send</button>
+			<input type="text" class="input mr-2 sm:w-1/2 md:w-3/4" bind:this={messageInputElement} />
+			<button class="btn" on:click={sendMessage}>Send</button>
 		</div>
 	</div>
 </div>
